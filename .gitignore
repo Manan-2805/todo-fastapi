@@ -3,3 +3,4 @@ env/
 __pycache__/
 tests/test_app.db
 .pytest_cache/
+GUIDE.md

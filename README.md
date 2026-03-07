@@ -105,6 +105,8 @@ todo-fastapi/
 │   └── test_user_data_isolation.py  # User data isolation tests
 ├── docker-compose.yml   # Docker services
 ├── Dockerfile          # Container image
+├── Jenkinsfile         # CI/CD pipeline configuration
+├── JENKINS_GUIDE.md    # Complete Jenkinsfile documentation
 ├── pytest.ini          # Pytest configuration
 ├── requirements.txt    # Python dependencies
 └── README.md           # This file
