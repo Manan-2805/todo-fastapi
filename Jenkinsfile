@@ -48,7 +48,7 @@ pipeline {
                              
                              View details: ${BUILD_URL}testReport/
                              Coverage report: ${BUILD_URL}Code_Coverage_Report/""",
-                             to: '${NOTIFICATION_EMAIL}'
+                             to: "${NOTIFICATION_EMAIL}"
                 }
                 failure {
                     echo "❌ Tests failed"
@@ -59,7 +59,7 @@ pipeline {
                              ${BUILD_URL}testReport/
                              
                              Console logs: ${BUILD_URL}console""",
-                             to: '${NOTIFICATION_EMAIL}'
+                             to: "${NOTIFICATION_EMAIL}"
                 }
             }
         }
@@ -87,12 +87,12 @@ pipeline {
                              - ${IMAGE_NAME}:latest
                              
                              Ready for deployment.""",
-                             to: '${NOTIFICATION_EMAIL}' 
+                             to: "${NOTIFICATION_EMAIL}" 
                 }
                 failure { 
                     emailext subject: "❌ Docker Build Failed - ${JOB_NAME} #${BUILD_NUMBER}", 
                              body: "Docker image build failed! Check logs: ${BUILD_URL}console", 
-                             to: '${NOTIFICATION_EMAIL}' 
+                             to: "${NOTIFICATION_EMAIL}" 
                 }
             }
         }
@@ -159,15 +159,15 @@ pipeline {
         success {
             emailext subject: "🚀 Pipeline SUCCESS - ${JOB_NAME} #${BUILD_NUMBER}",
                      body: "Everything passed! View: ${BUILD_URL}",
-                     to: '${NOTIFICATION_EMAIL}'
+                     to: "${NOTIFICATION_EMAIL}"
         }
         failure {
             emailext subject: "🔥 Pipeline FAILED - ${JOB_NAME} #${BUILD_NUMBER}",
                      body: "Check console: ${BUILD_URL}console",
-                     to: '${NOTIFICATION_EMAIL}'
+                     to: "${NOTIFICATION_EMAIL}"
         }
         fixed {
-            emailext subject: "✅ Build FIXED!", body: "Previous failure is now fixed.", to: '${NOTIFICATION_EMAIL}'
+            emailext subject: "✅ Build FIXED!", body: "Previous failure is now fixed.", to: "${NOTIFICATION_EMAIL}"
         }
     }
 }
