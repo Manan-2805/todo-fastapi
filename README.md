@@ -99,9 +99,13 @@ todo-fastapi/
 │   └── static/
 │       └── index.html   # Frontend UI
 ├── tests/
-│   └── test_main.py     # Tests
+│   ├── conftest.py                  # Test fixtures & DB setup
+│   ├── test_auth.py                 # Authentication tests
+│   ├── test_todos_crud.py           # Todo CRUD operation tests
+│   └── test_user_data_isolation.py  # User data isolation tests
 ├── docker-compose.yml   # Docker services
 ├── Dockerfile          # Container image
+├── pytest.ini          # Pytest configuration
 ├── requirements.txt    # Python dependencies
 └── README.md           # This file
 ```
@@ -167,9 +171,29 @@ This will start both PostgreSQL and the FastAPI application.
 
 ## 🧪 Testing
 
+The project includes a comprehensive test suite with production-grade coverage:
+
+**Test Coverage:**
+- **Authentication Tests** (`test_auth.py`) - Register, login, logout behavior, and `/me` endpoint
+- **CRUD Tests** (`test_todos_crud.py`) - Create, read, update, delete operations for todos
+- **Data Isolation Tests** (`test_user_data_isolation.py`) - User-specific data access and cross-user protection
+
+**Run all tests:**
 ```bash
 pytest tests/
 ```
+
+**Run specific test file:**
+```bash
+pytest tests/test_auth.py
+```
+
+**Run with verbose output:**
+```bash
+pytest tests/ -v
+```
+
+The test suite uses an isolated SQLite database with automatic setup and teardown for each test, ensuring clean and reproducible test runs.
 
 ## 🔒 Security Features
 
