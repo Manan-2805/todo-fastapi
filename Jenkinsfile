@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "todo-fastapi-devops"
-        NOTIFICATION_EMAIL = credentials('notification-recipient')
     }
 
     stages {
@@ -36,30 +35,44 @@ pipeline {
                         keepAll: true
                     ])
                 }
+
                 success {
                     echo "✅ All tests passed (21 tests: auth, CRUD, data isolation)"
-                    emailext subject: "✅ Tests PASSED - ${JOB_NAME} #${BUILD_NUMBER}",
-                             body: """All tests passed successfully!
-                             
-                             Test Summary:
-                             - Authentication Tests: PASSED
-                             - CRUD Operation Tests: PASSED
-                             - User Data Isolation Tests: PASSED
-                             
-                             View details: ${BUILD_URL}testReport/
-                             Coverage report: ${BUILD_URL}Code_Coverage_Report/""",
-                             to: "${NOTIFICATION_EMAIL}"
+                    script {
+                        withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                            emailext(
+                                subject: "✅ Tests PASSED - ${JOB_NAME} #${BUILD_NUMBER}",
+                                body: """All tests passed successfully!
+
+Test Summary:
+- Authentication Tests: PASSED
+- CRUD Operation Tests: PASSED
+- User Data Isolation Tests: PASSED
+
+View details: ${BUILD_URL}testReport/
+Coverage report: ${BUILD_URL}Code_Coverage_Report/""",
+                                to: EMAIL
+                            )
+                        }
+                    }
                 }
+
                 failure {
                     echo "❌ Tests failed"
-                    emailext subject: "❌ Tests FAILED - ${JOB_NAME} #${BUILD_NUMBER}",
-                             body: """Test suite failed!
-                             
-                             Check which tests failed:
-                             ${BUILD_URL}testReport/
-                             
-                             Console logs: ${BUILD_URL}console""",
-                             to: "${NOTIFICATION_EMAIL}"
+                    script {
+                        withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                            emailext(
+                                subject: "❌ Tests FAILED - ${JOB_NAME} #${BUILD_NUMBER}",
+                                body: """Test suite failed!
+
+Check which tests failed:
+${BUILD_URL}testReport/
+
+Console logs: ${BUILD_URL}console""",
+                                to: EMAIL
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -78,21 +91,34 @@ pipeline {
                 }
             }
             post {
-                success { 
-                    emailext subject: "✅ Docker Image Built - ${JOB_NAME} #${BUILD_NUMBER}", 
-                             body: """Docker image built successfully!
-                             
-                             Image tags:
-                             - ${IMAGE_NAME}:${BUILD_NUMBER}-<git-hash>
-                             - ${IMAGE_NAME}:latest
-                             
-                             Ready for deployment.""",
-                             to: "${NOTIFICATION_EMAIL}" 
+                success {
+                    script {
+                        withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                            emailext(
+                                subject: "✅ Docker Image Built - ${JOB_NAME} #${BUILD_NUMBER}",
+                                body: """Docker image built successfully!
+
+Image tags:
+- ${IMAGE_NAME}:${BUILD_NUMBER}-<git-hash>
+- ${IMAGE_NAME}:latest
+
+Ready for deployment.""",
+                                to: EMAIL
+                            )
+                        }
+                    }
                 }
-                failure { 
-                    emailext subject: "❌ Docker Build Failed - ${JOB_NAME} #${BUILD_NUMBER}", 
-                             body: "Docker image build failed! Check logs: ${BUILD_URL}console", 
-                             to: "${NOTIFICATION_EMAIL}" 
+
+                failure {
+                    script {
+                        withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                            emailext(
+                                subject: "❌ Docker Build Failed - ${JOB_NAME} #${BUILD_NUMBER}",
+                                body: "Docker image build failed! Check logs: ${BUILD_URL}console",
+                                to: EMAIL
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -126,10 +152,10 @@ pipeline {
                         
                         # Wait for container to be ready
                         sleep 5
-                        
+
                         # Basic health check
                         curl -f http://localhost:8001/ || exit 1
-                        
+
                         # Cleanup
                         docker stop test-container
                         docker rm test-container
@@ -137,7 +163,7 @@ pipeline {
                 }
             }
             post {
-                always { 
+                always {
                     echo "🧹 Cleaning up test containers..."
                     sh 'docker rm -f test-container || true'
                 }
@@ -156,18 +182,41 @@ pipeline {
         always {
             echo "Pipeline finished with result: ${currentBuild.result}"
         }
+
         success {
-            emailext subject: "🚀 Pipeline SUCCESS - ${JOB_NAME} #${BUILD_NUMBER}",
-                     body: "Everything passed! View: ${BUILD_URL}",
-                     to: "${NOTIFICATION_EMAIL}"
+            script {
+                withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                    emailext(
+                        subject: "🚀 Pipeline SUCCESS - ${JOB_NAME} #${BUILD_NUMBER}",
+                        body: "Everything passed! View: ${BUILD_URL}",
+                        to: EMAIL
+                    )
+                }
+            }
         }
+
         failure {
-            emailext subject: "🔥 Pipeline FAILED - ${JOB_NAME} #${BUILD_NUMBER}",
-                     body: "Check console: ${BUILD_URL}console",
-                     to: "${NOTIFICATION_EMAIL}"
+            script {
+                withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                    emailext(
+                        subject: "🔥 Pipeline FAILED - ${JOB_NAME} #${BUILD_NUMBER}",
+                        body: "Check console: ${BUILD_URL}console",
+                        to: EMAIL
+                    )
+                }
+            }
         }
+
         fixed {
-            emailext subject: "✅ Build FIXED!", body: "Previous failure is now fixed.", to: "${NOTIFICATION_EMAIL}"
+            script {
+                withCredentials([string(credentialsId: 'notification-recipient', variable: 'EMAIL')]) {
+                    emailext(
+                        subject: "✅ Build FIXED!",
+                        body: "Previous failure is now fixed.",
+                        to: EMAIL
+                    )
+                }
+            }
         }
     }
 }
