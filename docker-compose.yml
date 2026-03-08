@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 services:
   postgres:
     image: postgres:16
@@ -8,14 +8,30 @@ services:
       POSTGRES_PASSWORD: postgres
     ports: [ "5433:5432" ]
     networks: [ devops-net ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d tododb" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
   app:
-    build: .
+    image: ${APP_IMAGE:-todo-fastapi-devops:latest}
     ports: [ "8000:8000" ]
-    depends_on: [ postgres ]
+    depends_on:
+      postgres:
+        condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tododb
+      SECRET_KEY: ${SECRET_KEY:-dev-secret-key-not-for-production}
     networks: [ devops-net ]
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
 networks:
   devops-net:
-    external: true
+    driver: bridge
