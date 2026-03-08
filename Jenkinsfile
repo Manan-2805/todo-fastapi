@@ -6,16 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-            post {
-                success { echo "✅ Checkout successful" }
-                failure { echo "❌ Checkout failed" }
-            }
-        }
-
         stage('Run Tests') {
             steps {
                 sh '''
