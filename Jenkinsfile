@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "todo-fastapi-devops"
-        REGISTRY   = "registry:5000"
+        REGISTRY   = "localhost:5000"
     }
 
     stages {
