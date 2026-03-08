@@ -134,42 +134,70 @@ Ready for deployment.""",
                     
                     echo "🧪 Running smoke tests on container..."
                     sh '''
-                        # Ensure shared network exists (used by Jenkins, app, and postgres)
-                        docker network create devops-net 2>/dev/null || true
+                        SMOKE_NETWORK="smoke-test-net"
+                        DB_CONTAINER="smoke-postgres"
 
-                        # Cleanup any existing test container
-                        docker rm -f test-container 2>/dev/null || true
-                        
-                        # Start container on shared network and point app to postgres service
-                        docker run -d --name test-container --network devops-net \
-                            -e DATABASE_URL="postgresql://postgres:postgres@postgres:5432/tododb" \
+                        # Cleanup leftovers from previous runs
+                        docker rm -f test-container ${DB_CONTAINER} 2>/dev/null || true
+                        docker network rm ${SMOKE_NETWORK} 2>/dev/null || true
+
+                        # Create isolated network for smoke test stack
+                        docker network create ${SMOKE_NETWORK}
+
+                        # Start temporary postgres for smoke test
+                        docker run -d --name ${DB_CONTAINER} --network ${SMOKE_NETWORK} \
+                            -e POSTGRES_DB=tododb \
+                            -e POSTGRES_USER=postgres \
+                            -e POSTGRES_PASSWORD=postgres \
+                            postgres:16
+
+                        echo "Waiting for postgres to become ready..."
+                        for i in $(seq 1 30); do
+                            if docker exec ${DB_CONTAINER} pg_isready -U postgres -d tododb > /dev/null 2>&1; then
+                                echo "Postgres is ready"
+                                break
+                            fi
+                            if [ "$i" -eq 30 ]; then
+                                echo "Postgres did not become ready in time"
+                                docker logs ${DB_CONTAINER}
+                                exit 1
+                            fi
+                            sleep 2
+                        done
+
+                        # Start application against temporary postgres
+                        docker run -d --name test-container --network ${SMOKE_NETWORK} \
+                            -e DATABASE_URL="postgresql://postgres:postgres@${DB_CONTAINER}:5432/tododb" \
                             -e SECRET_KEY="smoke-test-secret-not-for-production" \
                             ${IMAGE_NAME}:latest
-                        
-                        # Wait for container to be ready
-                        echo "Waiting for container to start..."
+
+                        echo "Waiting for app to start..."
                         sleep 20
 
-                        # Basic health check from Jenkins container over shared docker network
+                        # Run health check from an ephemeral probe container on the same network
                         echo "Running health check..."
-                        if curl -f http://test-container:8000/ ; then
+                        if docker run --rm --network ${SMOKE_NETWORK} curlimages/curl:8.8.0 -fsS http://test-container:8000/ > /dev/null; then
                             echo "✅ Smoke test passed!"
                         else
                             echo "❌ Smoke test failed!"
+                            docker logs ${DB_CONTAINER}
                             docker logs test-container
                             exit 1
                         fi
 
                         # Cleanup
-                        docker stop test-container
-                        docker rm test-container
+                        docker rm -f test-container ${DB_CONTAINER}
+                        docker network rm ${SMOKE_NETWORK}
                     '''
                 }
             }
             post {
                 always {
                     echo "🧹 Cleaning up test containers..."
-                    sh 'docker rm -f test-container 2>/dev/null || true'
+                    sh '''
+                        docker rm -f test-container smoke-postgres 2>/dev/null || true
+                        docker network rm smoke-test-net 2>/dev/null || true
+                    '''
                 }
                 success {
                     echo "✅ Security scan and smoke tests passed"
