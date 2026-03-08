@@ -148,7 +148,7 @@ Ready for deployment.""",
                         export SECRET_KEY="smoke-test-secret-not-for-production"
                         export COMPOSE_PROJECT_NAME="smoke-${BUILD_NUMBER}"
 
-                        docker compose up -d --wait
+                        docker-compose up -d --wait
                         echo "Smoke test passed - all services are healthy!"
                     """
                 }
@@ -157,7 +157,7 @@ Ready for deployment.""",
                 always {
                     echo "Tearing down smoke test stack..."
                     sh """
-                        COMPOSE_PROJECT_NAME="smoke-${BUILD_NUMBER}" docker compose down --remove-orphans 2>/dev/null || true
+                        COMPOSE_PROJECT_NAME="smoke-${BUILD_NUMBER}" docker-compose down --remove-orphans 2>/dev/null || true
                     """
                 }
                 success {
