@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -7,7 +8,9 @@ from .schemas import TokenData
 from .database import get_db
 from sqlalchemy.orm import Session
 
-SECRET_KEY = "change-this-in-production-to-a-very-long-random-string"
+SECRET_KEY = os.environ.get("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 

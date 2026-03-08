@@ -12,6 +12,7 @@ pipeline {
                     python3 -m venv venv
                     . venv/bin/activate
                     pip install -r requirements.txt
+                    export SECRET_KEY="test-secret-key-not-for-production"
                     pytest tests/ -v --junitxml=test-results.xml --cov=app --cov-report=xml --cov-report=html --cov-report=term
                 '''
             }
@@ -122,7 +123,7 @@ Ready for deployment.""",
                     echo "🔍 Running security scan with Trivy..."
                     sh '''
                         # Run Trivy only if already installed (skip installation)
-                        if command -v trivy &> /dev/null; then
+                        if command -v trivy > /dev/null 2>&1; then
                             echo "Trivy found, running security scan..."
                             trivy image --severity HIGH,CRITICAL ${IMAGE_NAME}:latest || echo "⚠️ Trivy scan found issues but continuing..."
                         else
@@ -139,6 +140,7 @@ Ready for deployment.""",
                         # Start container in background
                         docker run -d --name test-container -p 8001:8000 \
                             -e DATABASE_URL="sqlite:///./test.db" \
+                            -e SECRET_KEY="smoke-test-secret-not-for-production" \
                             ${IMAGE_NAME}:latest
                         
                         # Wait for container to be ready
