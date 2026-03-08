@@ -134,12 +134,15 @@ Ready for deployment.""",
                     
                     echo "🧪 Running smoke tests on container..."
                     sh '''
+                        # Ensure shared network exists (used by Jenkins, app, and postgres)
+                        docker network create devops-net 2>/dev/null || true
+
                         # Cleanup any existing test container
                         docker rm -f test-container 2>/dev/null || true
                         
-                        # Start container in background
-                        docker run -d --name test-container -p 8001:8000 \
-                            -e DATABASE_URL="sqlite:///./test.db" \
+                        # Start container on shared network and point app to postgres service
+                        docker run -d --name test-container --network devops-net \
+                            -e DATABASE_URL="postgresql://postgres:postgres@postgres:5432/tododb" \
                             -e SECRET_KEY="smoke-test-secret-not-for-production" \
                             ${IMAGE_NAME}:latest
                         
@@ -147,9 +150,9 @@ Ready for deployment.""",
                         echo "Waiting for container to start..."
                         sleep 20
 
-                        # Basic health check
+                        # Basic health check from Jenkins container over shared docker network
                         echo "Running health check..."
-                        if curl -f http://localhost:8001/ ; then
+                        if curl -f http://test-container:8000/ ; then
                             echo "✅ Smoke test passed!"
                         else
                             echo "❌ Smoke test failed!"

@@ -7,9 +7,15 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports: [ "5433:5432" ]
+    networks: [ devops-net ]
   app:
     build: .
     ports: [ "8000:8000" ]
     depends_on: [ postgres ]
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/tododb
+    networks: [ devops-net ]
+
+networks:
+  devops-net:
+    external: true
